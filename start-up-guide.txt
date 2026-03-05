@@ -1,0 +1,14 @@
+OPEN CMD AND PASTE THIS:
+1. cd Desktop\groq-chatbot
+2. npm start
+NOW OPEN BROWSER AND PASTE THIS:
+  http://localhost:3000
+
+
+
+OR 
+Use this command : node server.js
+
+
+
+(you're good to go)

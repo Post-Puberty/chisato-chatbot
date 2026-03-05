@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chisato</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet" />
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+      background: transparent;
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23f5f5f5" width="100" height="100"/><circle cx="50" cy="50" r="40" fill="%23ececec" opacity="0.4"/></svg>');
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      -webkit-app-region: drag;
+      user-select: none;  /* Prevent text selection during drag */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* CHARACTER */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    #character-container {
+      position: fixed;
+      bottom: 0;
+      right: 80px;
+      width: 450px;
+      height: 600px;
+      pointer-events: all;  /* Changed from none to allow dragging */
+      z-index: 1;
+      -webkit-app-region: no-drag;
+      cursor: grab;
+    }
+
+    #character-container:active {
+      cursor: grabbing;
+    }
+
+    #character-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: bottom center;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.12));
+      animation: breathe 4.5s ease-in-out infinite, sway 7s ease-in-out infinite;
+      pointer-events: none;  /* Prevent default image drag behavior */
+      user-select: none;     /* Prevent selection */
+      -webkit-user-drag: none;  /* Disable drag preview on webkit */
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1) translateY(0); }
+      50%       { transform: scale(1.01) translateY(-4px); }
+    }
+
+    @keyframes sway {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25%       { transform: translateX(-3px) rotate(-0.4deg); }
+      75%       { transform: translateX(3px) rotate(0.4deg); }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* FLOATING CHAT ICON */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    #chat-icon-container {
+      position: fixed;
+      bottom: 480px;  /* Above Chisato's head */
+      right: 240px;
+      z-index: 50;
+      -webkit-app-region: no-drag;
+      pointer-events: all;
+      cursor: grab;
+    }
+
+    #chat-icon-container:active {
+      cursor: grabbing;
+    }
+
+    #chat-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,250,245,0.9) 100%);
+      border-radius: 50%;
+      box-shadow: 
+        0 8px 32px rgba(255, 182, 193, 0.4),
+        0 2px 8px rgba(0,0,0,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+      cursor: pointer;
+      pointer-events: all;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: float 3s ease-in-out infinite, pulseGlow 2.5s ease-in-out infinite;
+    }
+
+    #chat-icon:hover {
+      transform: scale(1.1);
+    }
+
+    #chat-icon:active {
+      transform: scale(0.95);
+    }
+
+    /* Floating animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-10px); }
+    }
+
+    /* Subtle glow pulse */
+    @keyframes pulseGlow {
+      0%, 100% { 
+        box-shadow: 
+          0 8px 32px rgba(255, 182, 193, 0.4),
+          0 2px 8px rgba(0,0,0,0.08),
+          inset 0 1px 0 rgba(255,255,255,0.8);
+      }
+      50% { 
+        box-shadow: 
+          0 8px 40px rgba(255, 182, 193, 0.6),
+          0 4px 16px rgba(255, 182, 193, 0.3),
+          inset 0 1px 0 rgba(255,255,255,0.9);
+      }
+    }
+
+    /* Icon content - chat bubble symbol */
+    #chat-icon::before {
+      content: '💬';
+      font-size: 28px;
+      filter: grayscale(0.3) brightness(1.1);
+    }
+
+    /* Notification dot (optional) */
+    #chat-icon::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 12px;
+      height: 12px;
+      background: linear-gradient(135deg, #ff6b9d, #c44569);
+      border-radius: 50%;
+      border: 2px solid white;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #chat-icon.has-notification::after {
+      opacity: 1;
+      transform: scale(1);
+      animation: bounce-dot 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes bounce-dot {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    /* Hide icon when chat is open */
+    #chat-icon-container.hidden {
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(0.8) translateY(-20px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* CHAT INTERFACE (EXPANDED STATE) */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    #chat-interface {
+      position: fixed;
+      bottom: 420px;  /* Above Chisato's head, below the icon */
+      right: 60px;    /* Aligned with Chisato */
+      width: 440px;
+      max-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 10;
+      -webkit-app-region: no-drag;
+      
+      /* Hidden by default */
+      opacity: 0;
+      transform: scale(0.85) translateY(30px);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #chat-interface.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: all;
+    }
+
+    /* Glass panel styling */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 20px;
+      box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.1),
+        0 2px 8px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      padding: 18px 22px;
+    }
+
+    /* Header with close button */
+    #chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      cursor: grab;
+      user-select: none;
+      padding: 4px 0;
+    }
+
+    #chat-header:active {
+      cursor: grabbing;
+    }
+
+    #chat-title {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #chat-title::before {
+      content: '🌸';
+      font-size: 1.2rem;
+    }
+
+    #close-chat {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 1.3rem;
+      color: #718096;
+    }
+
+    #close-chat:hover {
+      background: rgba(0, 0, 0, 0.1);
+      transform: scale(1.05);
+    }
+
+    /* Messages area */
+    #messages-container {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-right: 6px;
+    }
+
+    #messages-container::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    #messages-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #messages-container::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 10px;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: msgSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes msgSlideIn {
+      from { opacity: 0; transform: translateX(-16px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .message.user {
+      align-items: flex-end;
+    }
+
+    .msg-bubble {
+      padding: 11px 15px;
+      max-width: 80%;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
+
+    .message.user .msg-bubble {
+      background: linear-gradient(135deg, #ffa8c5 0%, #ff6b9d 100%);
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 3px 12px rgba(255, 107, 157, 0.3);
+    }
+
+    .message.assistant .msg-bubble {
+      background: rgba(255, 255, 255, 0.95);
+      color: #2d3748;
+      border-radius: 18px 18px 18px 4px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .msg-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.45);
+      padding: 0 8px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* Typing indicator */
+    #typing-indicator {
+      display: none;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      width: fit-content;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    #typing-indicator.visible {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ffa8c5;
+      animation: typingBounce 1.3s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30%            { transform: translateY(-7px); opacity: 1; }
+    }
+
+    /* Input area */
+    #input-wrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    #user-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1.5px solid rgba(0, 0, 0, 0.1);
+      border-radius: 14px;
+      padding: 11px 15px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      color: #2d3748;
+      resize: none;
+      max-height: 100px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    #user-input:focus {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: #ffa8c5;
+      box-shadow: 0 0 0 3px rgba(255, 168, 197, 0.15);
+    }
+
+    #user-input::placeholder {
+      color: rgba(0, 0, 0, 0.35);
+    }
+
+    #send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, #ffa8c5 0%, #ff6b9d 100%);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(255, 107, 157, 0.35);
+    }
+
+    #send-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 18px rgba(255, 107, 157, 0.45);
+    }
+
+    #send-btn:active {
+      transform: scale(0.95);
+    }
+
+    #send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .input-hint {
+      font-size: 0.7rem;
+      color: rgba(0, 0, 0, 0.4);
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* WINDOW CONTROLS */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    #window-controls {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+      -webkit-app-region: no-drag;
+    }
+
+    .control-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 1.2rem;
+      color: #718096;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.95);
+      transform: scale(1.08);
+    }
+
+    .control-btn.close:hover {
+      background: #ff5f57;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Window controls -->
+  <div id="window-controls">
+    <div class="control-btn minimize" title="Minimize">−</div>
+    <div class="control-btn close" title="Close">×</div>
+  </div>
+
+  <!-- Chisato character -->
+  <div id="character-container">
+    <img id="character-img" src="assets/calm.png" alt="Chisato" />
+  </div>
+
+  <!-- Floating chat icon (default state) -->
+  <div id="chat-icon-container">
+    <div id="chat-icon"></div>
+  </div>
+
+  <!-- Chat interface (expanded state) -->
+  <div id="chat-interface">
+    <!-- Messages panel -->
+    <div class="glass-panel">
+      <div id="chat-header">
+        <div id="chat-title">Chisato</div>
+        <button id="close-chat" title="Close chat">×</button>
+      </div>
+      
+      <div id="messages-container">
+        <!-- Messages appear here -->
+      </div>
+      
+      <div id="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <!-- Input panel -->
+    <div class="glass-panel">
+      <div id="input-wrapper">
+        <textarea
+          id="user-input"
+          rows="1"
+          placeholder="Talk to Chisato..."
+        ></textarea>
+        <button id="send-btn" title="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════
+    // DRAGGABLE FUNCTIONALITY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function makeDraggable(element) {
+      let isDragging = false;
+      let currentX = 0;
+      let currentY = 0;
+      let initialX;
+      let initialY;
+      let xOffset = 0;
+      let yOffset = 0;
+
+      element.addEventListener('mousedown', dragStart);
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', dragEnd);
+
+      function dragStart(e) {
+        // Allow dragging when clicking on the container or the image inside
+        if (e.target === element || e.target.closest('#character-container')) {
+          e.preventDefault();  // Prevent default drag behavior
+          initialX = e.clientX - xOffset;
+          initialY = e.clientY - yOffset;
+          isDragging = true;
+          element.style.cursor = 'grabbing';
+        }
+      }
+
+      function drag(e) {
+        if (isDragging) {
+          e.preventDefault();
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+          xOffset = currentX;
+          yOffset = currentY;
+
+          element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+        }
+      }
+
+      function dragEnd(e) {
+        if (isDragging) {
+          initialX = currentX;
+          initialY = currentY;
+          isDragging = false;
+          element.style.cursor = 'grab';
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STATE & ELEMENTS
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const chatIcon = document.getElementById('chat-icon');
+    const chatIconContainer = document.getElementById('chat-icon-container');
+    const chatInterface = document.getElementById('chat-interface');
+    const closeChatBtn = document.getElementById('close-chat');
+    const messagesContainer = document.getElementById('messages-container');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const characterContainer = document.getElementById('character-container');
+
+    let chatOpen = false;
+    let inactivityTimer = null;
+    const INACTIVITY_TIMEOUT = 60000; // 1 minute
+
+    // Special draggable for chat icon (needs click vs drag detection)
+    function makeDraggableWithClick(element, onClickCallback) {
+      let isDragging = false;
+      let hasMoved = false;
+      let currentX = 0;
+      let currentY = 0;
+      let initialX;
+      let initialY;
+      let xOffset = 0;
+      let yOffset = 0;
+      let startX;
+      let startY;
+
+      element.addEventListener('mousedown', dragStart);
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', dragEnd);
+
+      function dragStart(e) {
+        startX = e.clientX;
+        startY = e.clientY;
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+        isDragging = true;
+        hasMoved = false;
+        element.style.cursor = 'grabbing';
+      }
+
+      function drag(e) {
+        if (isDragging) {
+          e.preventDefault();
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+          xOffset = currentX;
+          yOffset = currentY;
+
+          // Check if mouse has moved more than 5px (threshold for drag vs click)
+          const deltaX = Math.abs(e.clientX - startX);
+          const deltaY = Math.abs(e.clientY - startY);
+          
+          if (deltaX > 5 || deltaY > 5) {
+            hasMoved = true;
+            element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+            
+            // Update chat interface position to follow icon
+            updateChatInterfacePosition();
+          }
+        }
+      }
+
+      function dragEnd(e) {
+        if (isDragging) {
+          initialX = currentX;
+          initialY = currentY;
+          isDragging = false;
+          element.style.cursor = 'grab';
+
+          // If didn't move, treat as click
+          if (!hasMoved && onClickCallback) {
+            onClickCallback();
+          }
+        }
+      }
+
+      // Return the current offset so we can access it
+      return {
+        getOffset: () => ({ x: xOffset, y: yOffset })
+      };
+    }
+
+    // Function to update chat interface position relative to icon
+    function updateChatInterfacePosition() {
+      const iconOffset = chatIconDragger.getOffset();
+      
+      // Only update if chat interface hasn't been manually dragged
+      if (!chatInterfaceManuallyDragged) {
+        chatInterface.style.transform = `translate(${iconOffset.x}px, ${iconOffset.y - 60}px)`;
+      }
+    }
+
+    let chatInterfaceManuallyDragged = false;
+
+    // Make elements draggable
+    const chatIconDragger = makeDraggableWithClick(chatIconContainer, openChat);
+    makeDraggableByHeader(chatInterface, document.getElementById('chat-header'));
+    makeDraggable(characterContainer);
+
+    // Special draggable function for chat interface (only drag by header)
+    function makeDraggableByHeader(element, handle) {
+      let isDragging = false;
+      let currentX;
+      let currentY;
+      let initialX;
+      let initialY;
+      let xOffset = 0;
+      let yOffset = 0;
+
+      handle.addEventListener('mousedown', dragStart);
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', dragEnd);
+
+      function dragStart(e) {
+        // Only start drag if clicking directly on the header
+        if (e.target === handle || e.target.id === 'chat-title' || e.target.closest('#chat-title')) {
+          initialX = e.clientX - xOffset;
+          initialY = e.clientY - yOffset;
+          isDragging = true;
+          handle.style.cursor = 'grabbing';
+        }
+      }
+
+      function drag(e) {
+        if (isDragging) {
+          e.preventDefault();
+          currentX = e.clientX - initialX;
+          currentY = e.clientY - initialY;
+          xOffset = currentX;
+          yOffset = currentY;
+
+          element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+          
+          // Mark that chat has been manually repositioned
+          chatInterfaceManuallyDragged = true;
+        }
+      }
+
+      function dragEnd(e) {
+        if (isDragging) {
+          initialX = currentX;
+          initialY = currentY;
+          isDragging = false;
+          handle.style.cursor = 'grab';
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EXPRESSION SYSTEM
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const EXPRESSIONS = {
+      calm: 'assets/calm.png',
+      happy: 'assets/happy.png',
+      grin: 'assets/grin.png',
+      thoughtful: 'assets/thoughtful.png',
+      surprised: 'assets/surprised.png'
+    };
+
+    let currentExpression = 'calm';
+
+    function setExpression(expr) {
+      if (!EXPRESSIONS[expr]) return;
+      currentExpression = expr;
+      
+      const charImg = document.getElementById('character-img');
+      const exprPath = EXPRESSIONS[expr];
+      
+      charImg.style.opacity = '0';
+      setTimeout(() => {
+        charImg.src = exprPath;
+        charImg.style.transition = 'opacity 0.3s ease';
+        charImg.style.opacity = '1';
+      }, 150);
+    }
+
+    function detectExpression(text) {
+      const lower = text.toLowerCase();
+      
+      if (/(haha|lol|funny|joke|tease)/i.test(lower)) return 'grin';
+      if (/(yay|great|awesome|yes!|love|happy|excited)/i.test(lower)) return 'happy';
+      if (/(hmm|think|wonder|maybe|probably|consider)/i.test(lower)) return 'thoughtful';
+      if (/(wait|what|really|whoa|oh!|seriously)/i.test(lower)) return 'surprised';
+      
+      return 'calm';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CHAT OPEN/CLOSE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function openChat() {
+      chatOpen = true;
+      chatIconContainer.classList.add('hidden');
+      chatInterface.classList.add('visible');
+      
+      // Position chat interface relative to icon when opening
+      updateChatInterfacePosition();
+      
+      setTimeout(() => userInput.focus(), 300);
+      resetInactivityTimer();
+    }
+
+    function closeChat() {
+      chatOpen = false;
+      chatInterface.classList.remove('visible');
+      setTimeout(() => {
+        chatIconContainer.classList.remove('hidden');
+      }, 400);
+      clearInactivityTimer();
+      
+      // Reset manual drag flag when closing
+      chatInterfaceManuallyDragged = false;
+    }
+
+    // Inactivity timer: auto-collapse after 1 minute
+    function resetInactivityTimer() {
+      clearInactivityTimer();
+      inactivityTimer = setTimeout(() => {
+        if (chatOpen) {
+          closeChat();
+        }
+      }, INACTIVITY_TIMEOUT);
+    }
+
+    function clearInactivityTimer() {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = null;
+      }
+    }
+
+    // Event listeners
+    closeChatBtn.addEventListener('click', closeChat);
+
+    // Reset timer on any interaction
+    userInput.addEventListener('input', resetInactivityTimer);
+    userInput.addEventListener('focus', resetInactivityTimer);
+    messagesContainer.addEventListener('scroll', resetInactivityTimer);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CHAT LOGIC
+    // ═══════════════════════════════════════════════════════════════════════
+
+    userInput.addEventListener('input', () => {
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 100) + 'px';
+    });
+
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    function addMessage(role, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${role}`;
+
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'msg-label';
+      labelDiv.textContent = role === 'user' ? 'You' : 'Chisato';
+
+      const bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'msg-bubble';
+      bubbleDiv.textContent = text;
+
+      if (role === 'user') {
+        msgDiv.appendChild(bubbleDiv);
+        msgDiv.appendChild(labelDiv);
+      } else {
+        msgDiv.appendChild(labelDiv);
+        msgDiv.appendChild(bubbleDiv);
+      }
+
+      messagesContainer.appendChild(msgDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      resetInactivityTimer();
+
+      return bubbleDiv;
+    }
+
+    function setTyping(visible) {
+      if (visible) {
+        typingIndicator.classList.add('visible');
+      } else {
+        typingIndicator.classList.remove('visible');
+      }
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    async function streamText(element, text, delayMs = 35) {
+      element.textContent = '';
+      const words = text.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        element.textContent += (i > 0 ? ' ' : '') + words[i];
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    async function sendMessage() {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      userInput.value = '';
+      userInput.style.height = 'auto';
+      sendBtn.disabled = true;
+
+      addMessage('user', text);
+      setTyping(true);
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+
+        if (!res.ok) throw new Error('Server error');
+
+        const data = await res.json();
+        setTyping(false);
+
+        const expr = detectExpression(data.reply);
+        setExpression(expr);
+
+        const bubble = addMessage('assistant', '');
+        await streamText(bubble, data.reply, 35);
+
+      } catch (err) {
+        setTyping(false);
+        setExpression('thoughtful');
+        addMessage('assistant', "Hmm, something went wrong. Try again?");
+      } finally {
+        sendBtn.disabled = false;
+        userInput.focus();
+        resetInactivityTimer();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WINDOW CONTROLS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    document.querySelector('.minimize')?.addEventListener('click', () => {
+      if (window.electronAPI) {
+        window.electronAPI.minimize();
+      }
+    });
+
+    document.querySelector('.close')?.addEventListener('click', () => {
+      if (window.electronAPI) {
+        window.electronAPI.close();
+      } else {
+        window.close();
+      }
+    });
+  </script>
+</body>
+</html>
