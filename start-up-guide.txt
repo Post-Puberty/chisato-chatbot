@@ -12,3 +12,7 @@ Use this command : node server.js
 
 
 (you're good to go)
+ 
+Modes: 
+set .env to "groq" (for groq api)
+set .env to "local" (for llm api)

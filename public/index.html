@@ -488,6 +488,105 @@
       background: #ff5f57;
       color: white;
     }
+
+    /* ═══════════════════════════════════════════════════════════════════ */
+    /* SETTINGS BUTTON & MODAL */
+    /* ═══════════════════════════════════════════════════════════════════ */
+
+    #settings-btn {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: all 0.2s ease;
+      -webkit-app-region: no-drag;
+      color: #718096;
+    }
+
+    #settings-btn:hover {
+      background: rgba(255, 255, 255, 0.95);
+      transform: scale(1.08);
+    }
+
+    #settings-modal {
+      position: fixed;
+      top: 70px;
+      left: 14px;
+      width: 300px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(28px);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      z-index: 101;
+      display: none;
+      -webkit-app-region: no-drag;
+    }
+
+    #settings-modal.visible {
+      display: block;
+      animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #settings-modal h3 {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 16px;
+    }
+
+    .provider-option {
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.6);
+      border: 2px solid rgba(0, 0, 0, 0.08);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .provider-option:hover {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: #ffa8c5;
+    }
+
+    .provider-option.active {
+      background: linear-gradient(135deg, #ffa8c5 0%, #ff6b9d 100%);
+      border-color: #ff6b9d;
+      color: white;
+    }
+
+    .provider-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .provider-desc {
+      font-size: 0.75rem;
+      opacity: 0.7;
+    }
+
+    .provider-option.active .provider-desc {
+      opacity: 0.9;
+    }
   </style>
 </head>
 <body>
@@ -496,6 +595,26 @@
   <div id="window-controls">
     <div class="control-btn minimize" title="Minimize">−</div>
     <div class="control-btn close" title="Close">×</div>
+  </div>
+
+  <!-- Settings button -->
+  <button id="settings-btn" title="Settings">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 1v6m0 6v6"></path>
+      <path d="M17 7l-5 5"></path>
+      <path d="M7 7l5 5"></path>
+      <path d="M7 17l5-5"></path>
+      <path d="M17 17l-5-5"></path>
+    </svg>
+  </button>
+
+  <!-- Settings modal -->
+  <div id="settings-modal">
+    <h3>LLM Provider</h3>
+    <div id="provider-list">
+      <!-- Providers will be loaded here -->
+    </div>
   </div>
 
   <!-- Chisato character -->
@@ -966,6 +1085,85 @@
         window.close();
       }
     });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SETTINGS & PROVIDER SWITCHING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const providerList = document.getElementById('provider-list');
+
+    let settingsOpen = false;
+
+    // Toggle settings modal
+    settingsBtn.addEventListener('click', () => {
+      settingsOpen = !settingsOpen;
+      if (settingsOpen) {
+        settingsModal.classList.add('visible');
+        loadProviders();
+      } else {
+        settingsModal.classList.remove('visible');
+      }
+    });
+
+    // Close settings when clicking outside
+    document.addEventListener('click', (e) => {
+      if (settingsOpen && 
+          !settingsModal.contains(e.target) && 
+          e.target !== settingsBtn &&
+          !settingsBtn.contains(e.target)) {
+        settingsOpen = false;
+        settingsModal.classList.remove('visible');
+      }
+    });
+
+    // Load available providers
+    async function loadProviders() {
+      try {
+        const res = await fetch('/provider');
+        const data = await res.json();
+        
+        providerList.innerHTML = '';
+        
+        data.available.forEach(provider => {
+          const div = document.createElement('div');
+          div.className = 'provider-option';
+          if (provider.id === data.current) {
+            div.classList.add('active');
+          }
+          
+          div.innerHTML = `
+            <div class="provider-name">${provider.name}</div>
+            <div class="provider-desc">${provider.description}</div>
+          `;
+          
+          div.addEventListener('click', () => switchProvider(provider.id));
+          providerList.appendChild(div);
+        });
+      } catch (err) {
+        console.error('Failed to load providers:', err);
+      }
+    }
+
+    // Switch provider
+    async function switchProvider(providerId) {
+      try {
+        const res = await fetch('/provider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: providerId })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log(`Switched to ${data.name}`);
+          loadProviders(); // Refresh the list to show new active provider
+        }
+      } catch (err) {
+        console.error('Failed to switch provider:', err);
+      }
+    }
   </script>
 </body>
 </html>

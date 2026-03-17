@@ -7,17 +7,35 @@ import { sendLocal } from "./providers/local.js";
 // ===== MEMORY SETTINGS =====
 const MAX_RECENT_MESSAGES = 8; // user+assistant pairs
 
+// ===== LLM PROVIDER SETTINGS =====
+let currentProvider = process.env.LLM_MODE || "local"; // Default to local
 let llm;
 
-if (process.env.LLM_MODE === "groq") {
-  console.log("Using GROQ LLM");
-  llm = sendGroq;
-} else if (process.env.LLM_MODE === "local") {
-  console.log("Using LOCAL LLM (LM Studio)");
-  llm = sendLocal;
-} else {
-  throw new Error("Invalid LLM_MODE in .env");
+const PROVIDERS = {
+  groq: {
+    name: "Groq",
+    handler: sendGroq,
+    description: "Cloud-based fast inference"
+  },
+  local: {
+    name: "Local LLM",
+    handler: sendLocal,
+    description: "LM Studio (localhost)"
+  }
+};
+
+function setProvider(providerName) {
+  if (PROVIDERS[providerName]) {
+    currentProvider = providerName;
+    llm = PROVIDERS[providerName].handler;
+    console.log(`Switched to ${PROVIDERS[providerName].name}`);
+    return true;
+  }
+  return false;
 }
+
+// Initialize with default provider
+setProvider(currentProvider);
 
 const app = express();
 const PORT = 3000;
@@ -115,6 +133,42 @@ async function maybeSummarizeMemory() {
 }
 
 
+// ===== API ENDPOINTS =====
+
+// Get current provider
+app.get("/provider", (req, res) => {
+  res.json({
+    current: currentProvider,
+    available: Object.keys(PROVIDERS).map(key => ({
+      id: key,
+      name: PROVIDERS[key].name,
+      description: PROVIDERS[key].description
+    }))
+  });
+});
+
+// Set provider
+app.post("/provider", (req, res) => {
+  const { provider } = req.body;
+  
+  if (!provider) {
+    return res.status(400).json({ error: "Provider name required" });
+  }
+
+  if (setProvider(provider)) {
+    res.json({ 
+      success: true, 
+      current: currentProvider,
+      name: PROVIDERS[currentProvider].name
+    });
+  } else {
+    res.status(400).json({ 
+      error: "Invalid provider",
+      available: Object.keys(PROVIDERS)
+    });
+  }
+});
+
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
   if (!userMessage) return res.status(400).json({ error: "No message" });
@@ -142,4 +196,5 @@ res.json({ reply: botReply });
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Current LLM provider: ${PROVIDERS[currentProvider].name}`);
 });
